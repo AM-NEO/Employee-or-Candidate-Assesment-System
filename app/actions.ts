@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { calculateTier } from '@/lib/tiering';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { candidates, Candidate, addCandidate, getAllCandidates, removeCandidate } from '@/lib/inMemoryDB';
+import { Candidate } from '@/lib/inMemoryDB';
+import { addCandidateToFile, getCandidatesFromFile, deleteCandidateFromFile } from '@/lib/persistentDB';
 
 const candidateSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -40,8 +41,9 @@ export async function registerCandidate(prevState: FormState, formData: FormData
   const { name, email, contact, ...skills } = validatedFields.data;
   const tier = calculateTier(skills);
 
-  // Generate a unique ID
-  const maxId = candidates.length > 0 ? Math.max(...candidates.map(c => c.id)) : 0;
+  // Get existing candidates to generate unique ID
+  const existingCandidates = getCandidatesFromFile();
+  const maxId = existingCandidates.length > 0 ? Math.max(...existingCandidates.map(c => c.id)) : 0;
   const newCandidate: Candidate = {
     id: maxId + 1,
     name,
@@ -53,7 +55,7 @@ export async function registerCandidate(prevState: FormState, formData: FormData
   };
 
   // Add candidate to persistent storage immediately
-  addCandidate(newCandidate);
+  addCandidateToFile(newCandidate);
   
   console.log('✅ Candidate successfully registered and saved:', {
     id: newCandidate.id,
@@ -85,7 +87,7 @@ export async function registerCandidate(prevState: FormState, formData: FormData
 }
 
 export async function getCandidates(filterTier?: number) {
-  const allCandidates = getAllCandidates();
+  const allCandidates = getCandidatesFromFile();
   
   let result = allCandidates;
   if (filterTier !== undefined && !isNaN(filterTier)) {
@@ -95,10 +97,12 @@ export async function getCandidates(filterTier?: number) {
 }
 
 export async function getCandidateById(id: number) {
-  return candidates.find(c => c.id === id);
+  const allCandidates = getCandidatesFromFile();
+  return allCandidates.find(c => c.id === id);
 }
 export async function sendEmailToCandidate(candidateId: number) {
-  const candidate = candidates.find(c => c.id === candidateId);
+  const allCandidates = getCandidatesFromFile();
+  const candidate = allCandidates.find(c => c.id === candidateId);
   if (!candidate) {
     return { success: false, error: 'Candidate not found' };
   }
@@ -118,7 +122,7 @@ export async function sendEmailToCandidate(candidateId: number) {
 }
 
 export async function deleteCandidate(candidateId: number) {
-  const success = removeCandidate(candidateId);
+  const success = deleteCandidateFromFile(candidateId);
   if (success) {
     revalidatePath('/admin');
     revalidatePath('/dashboard');
@@ -162,8 +166,9 @@ export async function addAdminUser(formData: FormData) {
 
 // Debug function to check candidates
 export async function debugCandidates() {
-  console.log('Current candidates:', candidates);
-  return candidates;
+  const allCandidates = getCandidatesFromFile();
+  console.log('Current candidates:', allCandidates);
+  return allCandidates;
 }
 
 // Test function to add a candidate manually
@@ -185,7 +190,7 @@ export async function addTestCandidate() {
     createdAt: new Date(),
   };
   
-  addCandidate(testCandidate);
+  addCandidateToFile(testCandidate);
   revalidatePath('/dashboard');
   
   return { success: true, candidate: testCandidate };
