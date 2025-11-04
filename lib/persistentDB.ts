@@ -1,24 +1,56 @@
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
 import { Candidate } from './inMemoryDB';
 
-const DB_FILE = join(process.cwd(), 'data', 'candidates.json');
+// In-memory storage for serverless environments
+let inMemoryCandidates: Candidate[] = [
+  {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+    contact: '+1234567890',
+    tier: 2,
+    knowsHtmlCssJs: true,
+    knowsReactNext: true,
+    canBuildCrud: true,
+    canBuildAuth: true,
+    knowsBackendFrameworks: false,
+    knowsGolang: false,
+    knowsCloudInfra: false,
+    knowsSystemDesign: false,
+    createdAt: new Date(),
+  }
+];
 
-// Ensure data directory exists
+// Check if we're in a serverless environment
+const isServerless = process.env.VERCEL || process.env.LAMBDA_TASK_ROOT || process.env.NODE_ENV === 'production';
+
+// Ensure data directory exists (only for local development)
 function ensureDataDir() {
-  const dataDir = join(process.cwd(), 'data');
-  if (!existsSync(dataDir)) {
-    try {
-      require('fs').mkdirSync(dataDir, { recursive: true });
-    } catch (error) {
-      console.error('Failed to create data directory:', error);
+  if (isServerless) return;
+  
+  try {
+    const { join } = require('path');
+    const { existsSync, mkdirSync } = require('fs');
+    const dataDir = join(process.cwd(), 'data');
+    if (!existsSync(dataDir)) {
+      mkdirSync(dataDir, { recursive: true });
     }
+  } catch (error) {
+    console.error('Failed to create data directory:', error);
   }
 }
 
-// Load candidates from file
+// Load candidates from file or memory
 export function loadCandidates(): Candidate[] {
+  if (isServerless) {
+    console.log('Using in-memory storage for serverless environment');
+    return inMemoryCandidates;
+  }
+
   try {
+    const { join } = require('path');
+    const { readFileSync, existsSync } = require('fs');
+    const DB_FILE = join(process.cwd(), 'data', 'candidates.json');
+    
     ensureDataDir();
     if (existsSync(DB_FILE)) {
       const data = readFileSync(DB_FILE, 'utf8');
@@ -30,38 +62,31 @@ export function loadCandidates(): Candidate[] {
       }));
     }
   } catch (error) {
-    console.error('Failed to load candidates:', error);
+    console.error('Failed to load candidates, using in-memory fallback:', error);
   }
   
-  // Return default candidates if file doesn't exist or error occurred
-  return [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      contact: '+1234567890',
-      tier: 2,
-      knowsHtmlCssJs: true,
-      knowsReactNext: true,
-      canBuildCrud: true,
-      canBuildAuth: true,
-      knowsBackendFrameworks: false,
-      knowsGolang: false,
-      knowsCloudInfra: false,
-      knowsSystemDesign: false,
-      createdAt: new Date(),
-    }
-  ];
+  return inMemoryCandidates;
 }
 
-// Save candidates to file
+// Save candidates to file or memory
 export function saveCandidates(candidates: Candidate[]): void {
+  if (isServerless) {
+    inMemoryCandidates = [...candidates];
+    console.log('Candidates saved to memory:', candidates.length);
+    return;
+  }
+
   try {
+    const { join } = require('path');
+    const { writeFileSync } = require('fs');
+    const DB_FILE = join(process.cwd(), 'data', 'candidates.json');
+    
     ensureDataDir();
     writeFileSync(DB_FILE, JSON.stringify(candidates, null, 2), 'utf8');
     console.log('Candidates saved to file:', candidates.length);
   } catch (error) {
-    console.error('Failed to save candidates:', error);
+    console.error('Failed to save candidates, using memory fallback:', error);
+    inMemoryCandidates = [...candidates];
   }
 }
 
@@ -70,7 +95,7 @@ export function addCandidateToFile(candidate: Candidate): void {
   const candidates = loadCandidates();
   candidates.unshift(candidate); // Add to beginning (newest first)
   saveCandidates(candidates);
-  console.log('Added candidate to persistent storage:', candidate.name);
+  console.log('Added candidate to storage:', candidate.name);
 }
 
 // Get all candidates from file

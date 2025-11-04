@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import bcrypt from 'bcrypt';
 
 export interface Admin {
@@ -10,16 +8,6 @@ export interface Admin {
   password?: string; // hashed
   provider: 'credentials';
   createdAt: Date;
-}
-
-const ADMIN_DB_PATH = path.join(process.cwd(), 'data', 'admins.json');
-
-// Ensure data directory exists
-function ensureDataDirectory() {
-  const dataDir = path.dirname(ADMIN_DB_PATH);
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
 }
 
 // Default admin that should always exist
@@ -33,9 +21,40 @@ const DEFAULT_ADMIN: Admin = {
   createdAt: new Date('2024-01-01'),
 };
 
-// Load admins from file
-function loadAdmins(): Admin[] {
+// In-memory storage for serverless environments
+let inMemoryAdmins: Admin[] = [DEFAULT_ADMIN];
+
+// Check if we're in a serverless environment
+const isServerless = process.env.VERCEL || process.env.LAMBDA_TASK_ROOT || process.env.NODE_ENV === 'production';
+
+// Ensure data directory exists (only for local development)
+function ensureDataDirectory() {
+  if (isServerless) return;
+  
   try {
+    const fs = require('fs');
+    const path = require('path');
+    const dataDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+  } catch (error) {
+    console.error('Failed to create data directory:', error);
+  }
+}
+
+// Load admins from file or memory
+function loadAdmins(): Admin[] {
+  if (isServerless) {
+    console.log('Using in-memory admin storage for serverless environment');
+    return inMemoryAdmins;
+  }
+
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const ADMIN_DB_PATH = path.join(process.cwd(), 'data', 'admins.json');
+    
     ensureDataDirectory();
     
     if (!fs.existsSync(ADMIN_DB_PATH)) {
@@ -61,26 +80,30 @@ function loadAdmins(): Admin[] {
     
     return admins;
   } catch (error) {
-    console.error('Error loading admins:', error);
-    // Return default admin if there's an error
-    const defaultData = [DEFAULT_ADMIN];
-    try {
-      saveAdmins(defaultData);
-    } catch (saveError) {
-      console.error('Error saving default admin:', saveError);
-    }
-    return defaultData;
+    console.error('Error loading admins, using in-memory fallback:', error);
+    return inMemoryAdmins;
   }
 }
 
-// Save admins to file
+// Save admins to file or memory
 function saveAdmins(admins: Admin[]): void {
+  if (isServerless) {
+    inMemoryAdmins = [...admins];
+    console.log('Admins saved to memory:', admins.length);
+    return;
+  }
+
   try {
+    const fs = require('fs');
+    const path = require('path');
+    const ADMIN_DB_PATH = path.join(process.cwd(), 'data', 'admins.json');
+    
     ensureDataDirectory();
     fs.writeFileSync(ADMIN_DB_PATH, JSON.stringify(admins, null, 2));
+    console.log('Admins saved to file:', admins.length);
   } catch (error) {
-    console.error('Error saving admins:', error);
-    throw error;
+    console.error('Error saving admins, using memory fallback:', error);
+    inMemoryAdmins = [...admins];
   }
 }
 
