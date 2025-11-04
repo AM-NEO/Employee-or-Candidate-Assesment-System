@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Data files (contains personal and sensitive information)
+/data/candidates.json
+/data/admins.json
+/data/
