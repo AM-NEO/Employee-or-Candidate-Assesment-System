@@ -11,7 +11,13 @@ export default async function AdminPage() {
     redirect('/auth/signin');
   }
 
-  const candidates = await getCandidates();
+  let candidates = [];
+  try {
+    candidates = await getCandidates();
+  } catch (error) {
+    console.error('Error loading candidates:', error);
+    candidates = [];
+  }
   
   // Calculate analytics
   const tierStats = candidates.reduce((acc, candidate) => {

@@ -1,6 +1,6 @@
 import { RegistrationForm } from "../components/RegistrationForm";
 
-export default async function HomePage() {
+export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Main container that takes full height minus header/footer */}

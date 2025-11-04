@@ -9,7 +9,13 @@ interface DashboardPageProps {
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const candidates = await getCandidates();
+  let candidates = [];
+  try {
+    candidates = await getCandidates();
+  } catch (error) {
+    console.error('Error loading candidates:', error);
+    candidates = [];
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

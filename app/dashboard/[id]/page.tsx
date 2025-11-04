@@ -16,7 +16,13 @@ export default async function CandidateDetailPage({ params }: CandidateDetailPag
     notFound();
   }
 
-  const candidate = await getCandidateById(id);
+  let candidate = null;
+  try {
+    candidate = await getCandidateById(id);
+  } catch (error) {
+    console.error('Error loading candidate:', error);
+    notFound();
+  }
 
   if (!candidate) {
     notFound();
