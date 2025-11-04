@@ -54,8 +54,8 @@ The application automatically calculates candidate tiers based on their technica
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/dessishub-assessor.git
-cd dessishub-assessor
+git clone https://github.com/AM-NEO/Employee-or-Candidate-Assesment-System.git
+cd Employee-or-Candidate-Assesment-System
 ```
 
 2. Install dependencies:
@@ -144,7 +144,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Developer**: Sir NEO  
 **Email**: neo@dessishub.com  
-**GitHub**: [@neo-codes](https://github.com/neo-codes)
+**GitHub**: [@AM-NEO](https://github.com/AM-NEO)
 
 ---
 
