@@ -10,13 +10,16 @@ export interface Admin {
   createdAt: Date;
 }
 
+// Pre-hashed password for default admin (Neo@2025 hashed with bcrypt)
+const DEFAULT_ADMIN_PASSWORD_HASH = '$2b$10$YZ6BpTMtHOubVz4AtioABeHtoAvB8o3tK3pSfcg1ejHfUM4TOcd.m';
+
 // Default admin that should always exist
 const DEFAULT_ADMIN: Admin = {
   id: 1,
   name: 'Sir NEO',
   email: 'neo@dessishub.com',
   username: 'sirneo',
-  password: bcrypt.hashSync('Neo@2025', 10),
+  password: DEFAULT_ADMIN_PASSWORD_HASH,
   provider: 'credentials',
   createdAt: new Date('2024-01-01'),
 };
@@ -123,8 +126,14 @@ export async function getAdminByCredentials(username: string, password: string):
   const admins = loadAdmins();
   const admin = admins.find(admin => admin.username === username && admin.provider === 'credentials');
   
-  if (admin && admin.password && await bcrypt.compare(password, admin.password)) {
-    return admin;
+  if (admin && admin.password) {
+    try {
+      const isValid = await bcrypt.compare(password, admin.password);
+      return isValid ? admin : null;
+    } catch (error) {
+      console.error('Error comparing passwords:', error);
+      return null;
+    }
   }
   return null;
 }
@@ -160,7 +169,12 @@ export async function addAdmin(adminData: Omit<Admin, 'id' | 'createdAt'>): Prom
   
   // Hash password if provided
   if (adminData.password) {
-    newAdmin.password = await bcrypt.hash(adminData.password, 10);
+    try {
+      newAdmin.password = await bcrypt.hash(adminData.password, 10);
+    } catch (error) {
+      console.error('Error hashing password:', error);
+      throw new Error('Failed to process password');
+    }
   }
   
   admins.push(newAdmin);
@@ -198,7 +212,12 @@ export async function updateAdmin(id: number, updates: Partial<Omit<Admin, 'id' 
   
   // Hash password if being updated
   if (updates.password) {
-    updates.password = await bcrypt.hash(updates.password, 10);
+    try {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    } catch (error) {
+      console.error('Error hashing password:', error);
+      throw new Error('Failed to process password');
+    }
   }
   
   admins[index] = { ...admins[index], ...updates };
