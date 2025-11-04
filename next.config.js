@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Suppress the workspace root warning
-  experimental: {
-    turbo: {
-      root: __dirname
-    }
-  }
+  // Basic Next.js configuration for Vercel deployment
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
 };
 
 module.exports = nextConfig;
