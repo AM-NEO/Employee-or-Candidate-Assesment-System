@@ -11,7 +11,7 @@ export default async function AdminPage() {
     redirect('/auth/signin');
   }
 
-  let candidates = [];
+  let candidates: any[] = [];
   try {
     candidates = await getCandidates();
   } catch (error) {

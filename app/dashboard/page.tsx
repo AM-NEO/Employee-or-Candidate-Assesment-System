@@ -9,7 +9,7 @@ interface DashboardPageProps {
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  let candidates = [];
+  let candidates: any[] = [];
   try {
     candidates = await getCandidates();
   } catch (error) {
